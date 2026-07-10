@@ -2,222 +2,426 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Call My Friends</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Friend Arena</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
   <style>
-    * {
-      box-sizing: border-box;
-      font-family: Arial, sans-serif;
+    :root{
+      --bg:#050816; --panel:#0b1025; --panel2:#101832; --card:#111b3e; --line:rgba(255,255,255,.11);
+      --text:#edf5ff; --muted:#94a3b8; --blue:#38bdf8; --green:#34d399; --gold:#fbbf24; --red:#fb7185; --purple:#a78bfa;
+      --shadow:0 24px 70px rgba(0,0,0,.42); --radius:24px;
     }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    body{margin:0;min-height:100vh;font-family:Manrope,ui-sans-serif,system-ui,Segoe UI,Arial,sans-serif;color:var(--text);background:
+      radial-gradient(circle at 15% 0%, rgba(56,189,248,.22), transparent 36%),
+      radial-gradient(circle at 90% 20%, rgba(52,211,153,.18), transparent 32%),
+      radial-gradient(circle at 40% 95%, rgba(251,191,36,.13), transparent 38%),var(--bg);overflow-x:hidden}
+    .wrap{width:min(1220px,100%);margin:0 auto;padding:18px}
+    header{display:flex;gap:14px;align-items:center;justify-content:space-between;margin-bottom:16px;position:sticky;top:0;z-index:10;padding:10px 0;background:linear-gradient(to bottom,rgba(5,8,22,.96),rgba(5,8,22,.75),transparent);backdrop-filter:blur(10px)}
+    .brand{display:flex;gap:12px;align-items:center}.logo{width:48px;height:48px;border-radius:16px;background:linear-gradient(135deg,var(--blue),var(--green),var(--gold));display:grid;place-items:center;font-family:"Space Grotesk",Manrope,sans-serif;font-weight:950;color:#04111f;box-shadow:0 12px 28px rgba(56,189,248,.2)}
+    h1{font-family:"Space Grotesk",Manrope,sans-serif;font-size:clamp(23px,4vw,40px);margin:0;letter-spacing:-1.2px}.sub{color:var(--muted);font-size:13px;margin-top:3px}.pill{border:1px solid var(--line);background:rgba(255,255,255,.06);border-radius:999px;padding:10px 13px;color:var(--muted);font-size:13px}
+    .grid{display:grid;grid-template-columns:350px 1fr;gap:16px}.stack{display:grid;gap:16px}.card{background:linear-gradient(180deg,rgba(17,27,62,.92),rgba(11,16,37,.9));border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;backdrop-filter:blur(18px)}
+    .card h2{font-size:18px;margin:0 0 11px}.card h3{font-size:14px;color:var(--muted);font-weight:800;margin:14px 0 8px;text-transform:uppercase;letter-spacing:.08em}
+    input,select{width:100%;border:1px solid var(--line);background:rgba(255,255,255,.07);color:var(--text);border-radius:14px;padding:13px 14px;outline:none;font-size:15px;margin:6px 0}input::placeholder{color:#718096}
+    button{border:0;border-radius:14px;padding:12px 14px;font-weight:900;color:#04111f;background:linear-gradient(135deg,var(--blue),var(--green));cursor:pointer;box-shadow:0 12px 24px rgba(56,189,248,.14);transition:transform .12s ease,filter .12s ease,opacity .12s ease}button:hover{transform:translateY(-1px);filter:brightness(1.06)}button:active{transform:scale(.98)}button.secondary{background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--line);box-shadow:none}button.gold{background:linear-gradient(135deg,var(--gold),#fb923c)}button.red{background:linear-gradient(135deg,var(--red),#f97316)}button.purple{background:linear-gradient(135deg,var(--purple),var(--blue))}button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+    .row{display:flex;gap:8px;align-items:center}.row>*{flex:1}.small{font-size:12px;color:var(--muted);line-height:1.45}.status{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.tag{padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid var(--line);font-size:12px;color:var(--muted)}.tag.good{color:#bbf7d0;border-color:rgba(52,211,153,.35)}.tag.warn{color:#fde68a;border-color:rgba(251,191,36,.35)}
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.stat{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:18px;padding:12px;text-align:center}.stat b{font-size:22px;display:block}.stat span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}.tabs{display:flex;gap:8px;overflow:auto;padding-bottom:6px;margin-bottom:10px}.tab{white-space:nowrap;background:rgba(255,255,255,.07);color:var(--text);border:1px solid var(--line);box-shadow:none}.tab.active{background:linear-gradient(135deg,var(--blue),var(--green));color:#04111f}
+    .main{min-height:720px}.gameTop{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.message{padding:12px;border-radius:16px;background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.22);color:#dff7ff;font-weight:800}.boardArea{display:grid;place-items:center;min-height:420px}
+    .videoGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.videoBox{background:#030712;border:1px solid var(--line);border-radius:18px;min-height:130px;overflow:hidden;position:relative}.videoBox video{width:100%;height:100%;object-fit:cover;display:block}.videoBox span{position:absolute;left:10px;top:8px;font-size:11px;color:white;background:rgba(0,0,0,.45);padding:4px 8px;border-radius:999px}.hidden{display:none!important}
+    .chatBox{height:170px;overflow:auto;border:1px solid var(--line);background:rgba(0,0,0,.18);border-radius:16px;padding:10px}.msg{padding:7px 9px;border-radius:12px;margin:6px 0;background:rgba(255,255,255,.07);font-size:13px}.msg.me{background:rgba(56,189,248,.17);text-align:right}.leader{display:grid;gap:7px}.leader div{display:flex;justify-content:space-between;border:1px solid var(--line);border-radius:12px;padding:8px 10px;background:rgba(255,255,255,.05)}
+    .ttt{display:grid;grid-template-columns:repeat(3,105px);grid-template-rows:repeat(3,105px);gap:10px}.ttt button{font-size:50px;background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--line);box-shadow:none}.ttt .x{color:var(--blue);text-shadow:0 0 25px rgba(56,189,248,.5)}.ttt .o{color:var(--gold);text-shadow:0 0 25px rgba(251,191,36,.5)}
+    .c4{display:grid;grid-template-columns:repeat(7,64px);grid-template-rows:repeat(6,64px);gap:8px;background:linear-gradient(180deg,#0f285e,#071b44);border:1px solid rgba(56,189,248,.25);border-radius:24px;padding:14px;position:relative;box-shadow:inset 0 0 35px rgba(0,0,0,.3)}.hole{width:64px;height:64px;border-radius:50%;background:#020617;border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 9px 18px rgba(0,0,0,.65);position:relative}.disc{width:54px;height:54px;border-radius:50%;position:absolute;left:5px;top:5px;box-shadow:inset 0 -10px 14px rgba(0,0,0,.2),0 8px 20px rgba(0,0,0,.2)}.disc.B{background:radial-gradient(circle at 32% 25%,#e0f7ff,var(--blue) 40%,#0369a1)}.disc.G{background:radial-gradient(circle at 32% 25%,#fff7cc,var(--gold) 45%,#b45309)}.fallingDisc{position:absolute;width:54px;height:54px;border-radius:50%;z-index:4;transition:transform .38s cubic-bezier(.2,.9,.2,1.25);pointer-events:none;left:0;top:0}.c4Col{position:absolute;top:0;height:100%;width:72px;cursor:pointer;z-index:3}
+    .chessWrap{display:grid;gap:10px;place-items:center;width:100%}.clocks{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap}.clock{padding:11px 18px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.06);font-size:24px;font-weight:950;min-width:130px;text-align:center}.clock.active{border-color:rgba(52,211,153,.5);box-shadow:0 0 22px rgba(52,211,153,.16)}
+    .chessBoard{display:grid;grid-template-columns:repeat(8, minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr));width:min(92vw,560px);height:min(92vw,560px);max-width:560px;max-height:560px;border-radius:18px;overflow:hidden;border:2px solid rgba(255,255,255,.18);box-shadow:0 25px 50px rgba(0,0,0,.35);touch-action:none}.sq{width:100%;height:100%;display:grid;place-items:center;position:relative;user-select:none}.light{background:#c9d7e8}.dark{background:#48739d}.sq.sel{outline:4px solid var(--gold);outline-offset:-4px}.sq.legal::after{content:"";width:20%;height:20%;border-radius:50%;background:rgba(2,6,23,.35)}.coord{position:absolute;left:4px;bottom:3px;font-size:10px;font-weight:900;color:rgba(2,6,23,.45)}.piece{width:78%;height:78%;display:grid;place-items:center;cursor:grab;filter:drop-shadow(0 7px 7px rgba(0,0,0,.35))}.piece:active{cursor:grabbing}.piece svg{width:100%;height:100%}.bluePiece .body{fill:#38bdf8}.bluePiece .shade{fill:#0ea5e9}.goldPiece .body{fill:#fbbf24}.goldPiece .shade{fill:#d97706}.piece .stroke{stroke:#07111f;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;fill:none}.piece .rim{fill:rgba(255,255,255,.36)}
+    .miniGrid{display:grid;gap:8px}.rpsBtns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}.rpsBtns button{font-size:32px;min-width:92px}.memory{display:grid;grid-template-columns:repeat(4,75px);gap:10px}.memCard{height:75px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.08);display:grid;place-items:center;font-size:34px;cursor:pointer}.memCard.open{background:linear-gradient(135deg,var(--purple),var(--blue));color:white}.reactionBox{width:min(420px,90vw);height:240px;border-radius:26px;border:1px solid var(--line);background:rgba(255,255,255,.07);display:grid;place-items:center;text-align:center;padding:20px;cursor:pointer}.reactionBox.go{background:linear-gradient(135deg,var(--green),var(--blue));color:#04111f}.reactionBox.wait{background:linear-gradient(135deg,var(--red),#fb923c);color:white}
 
-    body {
-      margin: 0;
-      background: linear-gradient(135deg, #111827, #1f2937);
-      color: white;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      padding: 30px 15px;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 430px;
-      background: #0f172a;
-      border-radius: 25px;
-      padding: 25px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-    }
-
-    h1 {
-      text-align: center;
-      margin-bottom: 5px;
-      font-size: 28px;
-    }
-
-    p {
-      text-align: center;
-      color: #94a3b8;
-      margin-bottom: 25px;
-    }
-
-    input {
-      width: 100%;
-      padding: 14px;
-      margin-bottom: 12px;
-      border: none;
-      border-radius: 12px;
-      outline: none;
-      font-size: 15px;
-      background: #1e293b;
-      color: white;
-    }
-
-    input::placeholder {
-      color: #94a3b8;
-    }
-
-    button {
-      border: none;
-      cursor: pointer;
-      border-radius: 12px;
-      font-weight: bold;
-      transition: 0.2s;
-    }
-
-    button:hover {
-      transform: scale(1.03);
-    }
-
-    .add-btn {
-      width: 100%;
-      padding: 14px;
-      background: #22c55e;
-      color: white;
-      font-size: 16px;
-      margin-bottom: 20px;
-    }
-
-    .friend-card {
-      background: #1e293b;
-      padding: 15px;
-      border-radius: 16px;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-
-    .friend-info {
-      overflow: hidden;
-    }
-
-    .friend-info h3 {
-      margin: 0;
-      font-size: 18px;
-    }
-
-    .friend-info span {
-      color: #94a3b8;
-      font-size: 14px;
-    }
-
-    .actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    .call-btn {
-      padding: 10px 13px;
-      background: #3b82f6;
-      color: white;
-    }
-
-    .delete-btn {
-      padding: 10px 13px;
-      background: #ef4444;
-      color: white;
-    }
-
-    .empty {
-      text-align: center;
-      color: #94a3b8;
-      margin-top: 25px;
-    }
+    .authOverlay{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:18px;background:radial-gradient(circle at 20% 20%,rgba(56,189,248,.25),transparent 32%),radial-gradient(circle at 85% 12%,rgba(167,139,250,.22),transparent 30%),rgba(3,7,18,.78);backdrop-filter:blur(18px)}
+    .authOverlay.hide{display:none}.authShell{width:min(980px,100%);display:grid;grid-template-columns:1.05fr .95fr;gap:14px}.authHero,.authPanel{border:1px solid rgba(255,255,255,.14);border-radius:32px;background:linear-gradient(180deg,rgba(17,27,62,.86),rgba(11,16,37,.92));box-shadow:0 30px 90px rgba(0,0,0,.48);padding:28px}.authHero{min-height:450px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;position:relative}.authHero:before{content:"";position:absolute;inset:-30%;background:conic-gradient(from 140deg,transparent,rgba(56,189,248,.18),rgba(52,211,153,.18),rgba(251,191,36,.14),transparent);animation:spinGlow 12s linear infinite}.authHero>*{position:relative}.miniLogo{width:72px;height:72px;border-radius:24px;background:linear-gradient(135deg,var(--blue),var(--green),var(--gold));display:grid;place-items:center;color:#04111f;font:900 30px "Space Grotesk";margin-bottom:auto}.authHero h2,.authPanel h2{font-family:"Space Grotesk",Manrope,sans-serif;font-size:clamp(28px,4vw,54px);letter-spacing:-1.6px;margin:0 0 10px}.authHero p,.authPanel p{color:#b8c7dd;margin:0;line-height:1.55}.authBadges{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}.authBadges span{border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);border-radius:999px;padding:9px 12px;font-weight:900;font-size:12px}.authPanel{display:grid;align-content:center;gap:10px}.authTop{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.iconBtn{width:42px;height:42px;border-radius:14px;background:rgba(255,255,255,.08);border:1px solid var(--line);color:white;box-shadow:none;font-size:24px;padding:0}.googleBtn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;background:#f8fafc;color:#0f172a;box-shadow:0 18px 30px rgba(255,255,255,.08)}.googleBtn span{width:25px;height:25px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#4285f4,#34a853,#fbbc05,#ea4335);color:white;font-weight:950}.divider{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.1em;margin:4px 0}.divider:before,.divider:after{content:"";height:1px;background:var(--line);flex:1}.skipBtn{width:100%;background:rgba(255,255,255,.05);border:1px dashed rgba(255,255,255,.2);color:#dbeafe;box-shadow:none}.authHint{background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.18);padding:10px;border-radius:14px}.signedBanner{display:none;padding:10px 12px;border-radius:16px;background:rgba(52,211,153,.11);border:1px solid rgba(52,211,153,.24);font-size:13px;color:#bbf7d0}.signedBanner.show{display:block}@keyframes spinGlow{to{transform:rotate(1turn)}}
+    .dragGhost{position:fixed;width:58px;height:58px;z-index:10000;pointer-events:none;transform:translate(-50%,-50%) scale(1.08);filter:drop-shadow(0 18px 20px rgba(0,0,0,.45));}
+    @media(max-width:950px){.grid{grid-template-columns:1fr}.main{min-height:auto}.videoGrid{grid-template-columns:1fr}.ttt{grid-template-columns:repeat(3,30vw);grid-template-rows:repeat(3,30vw);gap:8px}.c4{grid-template-columns:repeat(7,12vw);grid-template-rows:repeat(6,12vw);gap:5px;padding:8px}.hole{width:12vw;height:12vw}.disc{width:10vw;height:10vw;left:1vw;top:1vw}.memory{grid-template-columns:repeat(4,20vw)}.memCard{height:20vw}.stats{grid-template-columns:repeat(3,1fr)}.authShell{grid-template-columns:1fr}.authHero{min-height:260px}.authPanel,.authHero{padding:20px}}
   </style>
 </head>
-
 <body>
-  <div class="container">
-    <h1>📞 Call My Friends</h1>
-    <p>Add your friends and call them quickly</p>
-
-    <input type="text" id="nameInput" placeholder="Friend name" />
-    <input type="tel" id="phoneInput" placeholder="Phone number" />
-    <button class="add-btn" onclick="addFriend()">Add Friend</button>
-
-    <input type="text" id="searchInput" placeholder="Search friend..." oninput="displayFriends()" />
-
-    <div id="friendsList"></div>
+  <div class="authOverlay" id="authOverlay">
+    <div class="authShell">
+      <div class="authHero">
+        <div class="miniLogo">FA</div>
+        <h2>Welcome to Friend Arena</h2>
+        <p>Call your friends, video chat, play smooth games, and keep your rewards saved to your account.</p>
+        <div class="authBadges">
+          <span>⚡ XP saved</span><span>🏆 Leaderboards</span><span>🎮 Game history</span>
+        </div>
+      </div>
+      <div class="authPanel">
+        <div class="authTop">
+          <div>
+            <h2>Sign in</h2>
+            <p>Continue with Google, email, or skip for now.</p>
+          </div>
+          <button id="closeAuth" class="iconBtn" title="Close">×</button>
+        </div>
+        <button id="googleBtn" class="googleBtn"><span>G</span> Continue with Google</button>
+        <div class="divider"><span>or use email</span></div>
+        <input id="nameInput" placeholder="Display name for sign up" autocomplete="name" />
+        <input id="emailInput" placeholder="Email" type="email" autocomplete="email" />
+        <input id="passInput" placeholder="Password" type="password" autocomplete="current-password" />
+        <div class="row"><button id="signinBtn">Sign in</button><button id="signupBtn" class="secondary">Create account</button></div>
+        <button id="skipAuthBtn" class="skipBtn">Skip sign in and play as guest</button>
+        <div class="small authHint">Firebase keys are needed for real online Google/email accounts. Without Firebase, this page uses local demo accounts on this browser.</div>
+      </div>
+    </div>
   </div>
 
-  <script>
-    let friends = JSON.parse(localStorage.getItem("friends")) || [
-      { name: "Ahmed", phone: "0500000000" },
-      { name: "Mohammed", phone: "0550000000" }
-    ];
+  <div class="wrap">
+    <header>
+      <div class="brand"><div class="logo">FA</div><div><h1>Friend Arena</h1><div class="sub">Call, video chat, play, earn rewards, and save your profile.</div></div></div>
+      <div class="pill" id="modePill">Local Mode</div>
+    </header>
 
-    function saveFriends() {
-      localStorage.setItem("friends", JSON.stringify(friends));
-    }
+    <div class="grid">
+      <aside class="stack">
+        <section class="card" id="authCard">
+          <h2>Account</h2>
+          <div class="small">Sign in to save rewards, call history, game history, and leaderboard progress to your account. You can still skip and play as a guest.</div>
+          <div class="status"><span class="tag" id="authStatus">Guest</span><span class="tag warn" id="backendStatus">Local save</span></div>
+          <div class="row"><button id="openAuthBtn" class="purple">Open sign in</button><button id="signoutBtn" class="secondary">Sign out</button></div>
+          <button id="emailReportBtn" class="gold" style="width:100%;margin-top:8px">Email my report</button>
+        </section>
 
-    function addFriend() {
-      const name = document.getElementById("nameInput").value.trim();
-      const phone = document.getElementById("phoneInput").value.trim();
-
-      if (name === "" || phone === "") {
-        alert("Please enter both name and phone number.");
-        return;
-      }
-
-      friends.push({ name, phone });
-      saveFriends();
-
-      document.getElementById("nameInput").value = "";
-      document.getElementById("phoneInput").value = "";
-
-      displayFriends();
-    }
-
-    function callFriend(phone) {
-      const cleanPhone = phone.replace(/\s+/g, "");
-      window.location.href = "tel:" + cleanPhone;
-    }
-
-    function deleteFriend(index) {
-      friends.splice(index, 1);
-      saveFriends();
-      displayFriends();
-    }
-
-    function displayFriends() {
-      const list = document.getElementById("friendsList");
-      const search = document.getElementById("searchInput").value.toLowerCase();
-
-      list.innerHTML = "";
-
-      const filteredFriends = friends.filter(friend =>
-        friend.name.toLowerCase().includes(search) ||
-        friend.phone.includes(search)
-      );
-
-      if (filteredFriends.length === 0) {
-        list.innerHTML = `<div class="empty">No friends found</div>`;
-        return;
-      }
-
-      filteredFriends.forEach((friend, index) => {
-        const realIndex = friends.indexOf(friend);
-
-        list.innerHTML += `
-          <div class="friend-card">
-            <div class="friend-info">
-              <h3>${friend.name}</h3>
-              <span>${friend.phone}</span>
-            </div>
-
-            <div class="actions">
-              <button class="call-btn" onclick="callFriend('${friend.phone}')">Call</button>
-              <button class="delete-btn" onclick="deleteFriend(${realIndex})">X</button>
-            </div>
+        <section class="card">
+          <h2>Connect & call</h2>
+          <div class="small"><b>How to use:</b> Both open the same link. Send your 4-digit ID to your friend. Only one person pastes the other ID and presses connect.</div>
+          <h3>Your ID</h3>
+          <div class="row"><input id="myId" readonly value="Generating..." /><button id="copyId" class="secondary">Copy</button></div>
+          <h3>Friend ID</h3>
+          <input id="friendId" placeholder="Enter friend's 4-digit ID" maxlength="4" />
+          <div class="row"><button id="connectBtn">Connect</button><button id="disconnectBtn" class="secondary">Disconnect</button></div>
+          <div class="row"><button id="startVideoBtn" class="purple">Start video call</button><button id="startAudioBtn" class="gold">Audio only</button></div>
+          <div class="row"><button id="answerBtn" class="green">Answer incoming</button><button id="endCallBtn" class="red">End call</button></div>
+          <div class="status"><span class="tag" id="connStatus">Not connected</span><span class="tag" id="callStatus">No call</span></div>
+          <div class="videoGrid">
+            <div class="videoBox"><span>You</span><video id="localVideo" muted autoplay playsinline></video></div>
+            <div class="videoBox"><span>Friend</span><video id="remoteVideo" autoplay playsinline></video></div>
           </div>
-        `;
-      });
-    }
+        </section>
 
-    displayFriends();
-  </script>
+        <section class="card">
+          <h2>Rewards</h2>
+          <div class="stats">
+            <div class="stat"><b id="xpStat">0</b><span>XP</span></div>
+            <div class="stat"><b id="coinStat">0</b><span>Coins</span></div>
+            <div class="stat"><b id="streakStat">0</b><span>Streak</span></div>
+          </div>
+          <h3>Main game rewards</h3>
+          <div class="small">Online wins: Tic Tac Toe +20 XP, Connect Four +35 XP, Chess +70 XP. Draws give smaller rewards.</div>
+          <h3>Leaderboard</h3>
+          <div id="leaderboard" class="leader"></div>
+        </section>
+
+        <section class="card">
+          <h2>Chat</h2>
+          <div class="chatBox" id="chatBox"></div>
+          <div class="row"><input id="chatInput" placeholder="Message friend..." /><button id="sendChat">Send</button></div>
+        </section>
+      </aside>
+
+      <main class="card main">
+        <div class="tabs" id="tabs"></div>
+        <div class="gameTop"><div class="message" id="gameMessage">Choose a game. You can play locally before your friend joins.</div><button id="resetGame" class="secondary">Reset game</button></div>
+        <div class="boardArea" id="boardArea"></div>
+      </main>
+    </div>
+  </div>
+
+<script type="module">
+/*
+  FIREBASE ONLINE SAVE SETUP:
+  1) Create a Firebase project: https://console.firebase.google.com/
+  2) Add a Web App and copy the firebaseConfig values here.
+  3) Enable Authentication > Email/Password and Google.
+  4) Add your GitHub Pages domain in Authentication > Settings > Authorized domains.
+  5) Enable Firestore Database.
+  6) Upload this file again to GitHub Pages.
+*/
+const firebaseConfig = {
+  apiKey: "AIzaSyDYkDTVxOEzxg17ZPSjQsl7AikAjZq__W8",
+  authDomain: "callmafriends.firebaseapp.com",
+  projectId: "callmafriends",
+  storageBucket: "callmafriends.firebasestorage.app",
+  messagingSenderId: "1095899763571",
+  appId: "1:1095899763571:web:be4fd5612f75d2053d2b06",
+  measurementId: "G-XYLXPWLZRV"
+};
+
+let fb = null;
+const firebaseReady = firebaseConfig.apiKey && !firebaseConfig.apiKey.includes('PASTE_');
+if(firebaseReady){
+  try{
+    const appMod = await import('https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js');
+    const authMod = await import('https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js');
+    const storeMod = await import('https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js');
+    const app = appMod.initializeApp(firebaseConfig);
+    const auth = authMod.getAuth(app);
+    const db = storeMod.getFirestore(app);
+    fb = {...authMod, ...storeMod, auth, db};
+    $('#backendStatus').textContent = 'Online save ready';
+    $('#backendStatus').className = 'tag good';
+    fb.onAuthStateChanged(auth, async user => { if(user) await loadFirebaseProfile(user); else setGuest(); });
+  }catch(e){ console.warn(e); $('#backendStatus').textContent='Firebase error: local save'; }
+}
+
+const GAME_LIST = [
+  {id:'ttt', name:'Tic Tac Toe'},
+  {id:'c4', name:'Connect Four'},
+  {id:'chess', name:'Chess'},
+  {id:'rps', name:'Rock Paper Scissors'},
+  {id:'memory', name:'Memory Match'},
+  {id:'reaction', name:'Reaction Duel'},
+  {id:'checkers', name:'Checkers'}
+];
+let currentGame = 'ttt';
+let online = false, isHost = false, conn = null, peer = null, peerId = '', pendingCall = null, activeCall = null, localStream = null;
+let profile = null;
+let selectedChess = null, legalChess = [];
+let c4Animating = false;
+
+const baseProfile = email => ({email, name: email ? email.split('@')[0] : 'Guest', xp:0, coins:0, streak:0, stats:{ttt:{w:0,l:0,d:0},c4:{w:0,l:0,d:0},chess:{w:0,l:0,d:0}}, callHistory:[], gameHistory:[], createdAt:new Date().toISOString(), updatedAt:new Date().toISOString()});
+function setGuest(){ profile = JSON.parse(localStorage.getItem('fa_guest')) || baseProfile('guest@local'); profile.name = profile.name || 'Guest'; updateProfileUI(); }
+setGuest();
+
+function showAuth(){ $('#authOverlay').classList.remove('hide'); }
+function hideAuth(){ $('#authOverlay').classList.add('hide'); localStorage.setItem('fa_auth_seen','1'); }
+$('#openAuthBtn').onclick = showAuth;
+$('#closeAuth').onclick = hideAuth;
+$('#skipAuthBtn').onclick = ()=>{ hideAuth(); toast('Guest mode. Your progress saves only on this browser.'); };
+if(localStorage.getItem('fa_auth_seen')==='1') $('#authOverlay').classList.add('hide');
+
+function saveLocalProfile(){ profile.updatedAt = new Date().toISOString(); localStorage.setItem(profile.email==='guest@local'?'fa_guest':'fa_user_'+profile.email, JSON.stringify(profile)); updateProfileUI(); }
+async function saveProfile(){ if(!profile) return; if(fb && fb.auth.currentUser){ profile.updatedAt=new Date().toISOString(); await fb.setDoc(fb.doc(fb.db,'users',fb.auth.currentUser.uid), profile, {merge:true}); } saveLocalProfile(); refreshLeaderboard(); }
+async function loadFirebaseProfile(user){ const ref = fb.doc(fb.db,'users',user.uid); const snap = await fb.getDoc(ref); profile = snap.exists()? snap.data() : baseProfile(user.email); profile.email = user.email; profile.name = user.displayName || profile.name || user.email.split('@')[0]; await fb.setDoc(ref, profile, {merge:true}); updateProfileUI(); refreshLeaderboard(); }
+function updateProfileUI(){ $('#authStatus').textContent = profile?.email==='guest@local' ? 'Guest mode' : `Signed in: ${profile.name}`; $('#xpStat').textContent=profile?.xp||0; $('#coinStat').textContent=profile?.coins||0; $('#streakStat').textContent=profile?.streak||0; if(profile?.email!=='guest@local') $('#authOverlay').classList.add('hide'); refreshLeaderboard(); }
+async function refreshLeaderboard(){
+  const box = $('#leaderboard'); box.innerHTML='';
+  let list=[];
+  if(fb){
+    try{ const q = fb.query(fb.collection(fb.db,'users'), fb.orderBy('xp','desc'), fb.limit(8)); const qs = await fb.getDocs(q); qs.forEach(d=>list.push(d.data())); }catch(e){}
+  }
+  if(!list.length){
+    Object.keys(localStorage).filter(k=>k.startsWith('fa_user_')||k==='fa_guest').forEach(k=>{try{list.push(JSON.parse(localStorage.getItem(k)))}catch(e){}});
+    list.sort((a,b)=>(b.xp||0)-(a.xp||0)); list=list.slice(0,8);
+  }
+  if(!list.length){ box.innerHTML='<div><span>No players yet</span><b>0 XP</b></div>'; return; }
+  list.forEach((p,i)=>{ const div=document.createElement('div'); div.innerHTML=`<span>${i+1}. ${escapeHtml(p.name||p.email||'Player')}</span><b>${p.xp||0} XP</b>`; box.appendChild(div); });
+}
+
+$('#signupBtn').onclick = async()=>{
+  const name=$('#nameInput').value.trim()||'Player', email=$('#emailInput').value.trim().toLowerCase(), pass=$('#passInput').value;
+  if(!email||!pass) return toast('Enter email and password.');
+  if(fb){ try{ const cr=await fb.createUserWithEmailAndPassword(fb.auth,email,pass); await fb.updateProfile(cr.user,{displayName:name}); profile=baseProfile(email); profile.name=name; await saveProfile(); try{await fb.sendEmailVerification(cr.user); hideAuth(); toast('Account made. Verification email sent.');}catch{hideAuth(); toast('Account made.');} }catch(e){toast(e.message);} }
+  else{ const users=JSON.parse(localStorage.getItem('fa_accounts')||'{}'); if(users[email]) return toast('Account exists. Sign in.'); users[email]={pass,name}; localStorage.setItem('fa_accounts',JSON.stringify(users)); profile=baseProfile(email); profile.name=name; saveLocalProfile(); hideAuth(); toast('Local account made. Add Firebase later for real online saving.'); }
+};
+$('#signinBtn').onclick = async()=>{
+  const email=$('#emailInput').value.trim().toLowerCase(), pass=$('#passInput').value; if(!email||!pass) return toast('Enter email and password.');
+  if(fb){ try{ await fb.signInWithEmailAndPassword(fb.auth,email,pass); hideAuth(); toast('Signed in. Rewards save to your account.'); }catch(e){toast(e.message);} }
+  else{ const users=JSON.parse(localStorage.getItem('fa_accounts')||'{}'); if(!users[email]||users[email].pass!==pass) return toast('Wrong local email/password.'); profile=JSON.parse(localStorage.getItem('fa_user_'+email))||baseProfile(email); profile.name=users[email].name; updateProfileUI(); hideAuth(); toast('Signed in locally.'); }
+};
+$('#googleBtn').onclick = async()=>{
+  if(!fb) return toast('Google sign-in needs Firebase keys first. Use email local mode or skip for now.');
+  try{ const provider = new fb.GoogleAuthProvider(); await fb.signInWithPopup(fb.auth, provider); hideAuth(); toast('Signed in with Google. Rewards save to this account.'); }catch(e){ toast(e.message || 'Google sign-in failed.'); }
+};
+$('#signoutBtn').onclick = async()=>{ if(fb) await fb.signOut(fb.auth); setGuest(); toast('Signed out.'); };
+$('#emailReportBtn').onclick = ()=>{
+  if(!profile) return;
+  const body = encodeURIComponent(`Friend Arena report\n\nName: ${profile.name}\nEmail: ${profile.email}\nXP: ${profile.xp}\nCoins: ${profile.coins}\nStreak: ${profile.streak}\n\nStats:\nTic Tac Toe: ${JSON.stringify(profile.stats.ttt)}\nConnect Four: ${JSON.stringify(profile.stats.c4)}\nChess: ${JSON.stringify(profile.stats.chess)}\n\nCall history count: ${profile.callHistory.length}\nGame history count: ${profile.gameHistory.length}`);
+  location.href = `mailto:${profile.email==='guest@local'?'':profile.email}?subject=Friend Arena Profile Report&body=${body}`;
+};
+
+function randomId(){ return String(Math.floor(1000+Math.random()*9000)); }
+function makePeer(){
+  peerId=randomId(); $('#myId').value='Generating...';
+  peer = new Peer(peerId, {debug:0});
+  peer.on('open', id=>{ peerId=id; $('#myId').value=id; });
+  peer.on('error', err=>{ console.warn(err); if(String(err.type).includes('unavailable-id')){ try{peer.destroy()}catch{}; setTimeout(makePeer,250); } else toast('Connection ID error. Refresh or try Chrome.'); });
+  peer.on('connection', c=>{ conn=c; isHost=false; setupConn(); });
+  peer.on('call', call=>{ pendingCall=call; $('#callStatus').textContent='Incoming call'; toast('Incoming call. Press Answer.'); });
+}
+makePeer();
+$('#copyId').onclick=async()=>{ await navigator.clipboard.writeText($('#myId').value); toast('ID copied.'); };
+$('#connectBtn').onclick=()=>{ const id=$('#friendId').value.trim(); if(!id||id===peerId) return toast('Enter your friend\'s ID.'); conn=peer.connect(id,{reliable:true}); isHost=true; setupConn(); };
+$('#disconnectBtn').onclick=()=>{ if(conn) conn.close(); online=false; conn=null; updateMode(); };
+function setupConn(){
+  conn.on('open',()=>{ online=true; updateMode(); send({type:'hello', name:profile.name, game:currentGame, state:getState()}); toast('Connected.'); });
+  conn.on('data', handlePacket);
+  conn.on('close',()=>{ online=false; updateMode(); toast('Friend disconnected.'); });
+  conn.on('error',()=>toast('Connection failed.'));
+}
+function updateMode(){ $('#modePill').textContent = online ? (isHost?'Online: Player 1':'Online: Player 2') : 'Local Mode'; $('#connStatus').textContent=online?'Connected':'Not connected'; $('#connStatus').className='tag '+(online?'good':''); renderGame(); }
+function send(packet){ if(conn && conn.open) conn.send(packet); }
+function handlePacket(p){
+  if(!p||!p.type) return;
+  if(p.type==='hello'){ online=true; updateMode(); if(p.game){ currentGame=p.game; setGame(currentGame,false); } if(p.state) setState(p.state,false); }
+  if(p.type==='selectGame') setGame(p.game,false);
+  if(p.type==='state') setState(p.state,false);
+  if(p.type==='chat') addChat(p.text,false);
+  if(p.type==='c4move') applyC4Move(p.col,false);
+}
+
+async function getMedia(video=true){
+  if(localStream) return localStream;
+  localStream = await navigator.mediaDevices.getUserMedia({video, audio:true});
+  $('#localVideo').srcObject=localStream; return localStream;
+}
+$('#startVideoBtn').onclick=async()=>{ if(!online) return toast('Connect to friend first.'); try{ const s=await getMedia(true); activeCall=peer.call($('#friendId').value.trim()||conn.peer,s); bindCall(activeCall); logCall('video started'); }catch(e){toast('Allow camera/mic.');} };
+$('#startAudioBtn').onclick=async()=>{ if(!online) return toast('Connect to friend first.'); try{ const s=await getMedia(false); activeCall=peer.call($('#friendId').value.trim()||conn.peer,s); bindCall(activeCall); logCall('audio started'); }catch(e){toast('Allow microphone.');} };
+$('#answerBtn').onclick=async()=>{ if(!pendingCall) return toast('No incoming call.'); try{ const s=await getMedia(true); pendingCall.answer(s); activeCall=pendingCall; bindCall(activeCall); pendingCall=null; logCall('answered call'); }catch(e){toast('Allow camera/mic.');} };
+$('#endCallBtn').onclick=()=>{ if(activeCall) activeCall.close(); if(localStream){localStream.getTracks().forEach(t=>t.stop()); localStream=null;} $('#localVideo').srcObject=null; $('#remoteVideo').srcObject=null; $('#callStatus').textContent='Call ended'; };
+function bindCall(call){ $('#callStatus').textContent='In call'; call.on('stream', s=>$('#remoteVideo').srcObject=s); call.on('close',()=>$('#callStatus').textContent='Call ended'); }
+function logCall(type){ profile.callHistory.unshift({type, with:conn?.peer||'friend', at:new Date().toISOString()}); profile.callHistory=profile.callHistory.slice(0,50); saveProfile(); }
+
+$('#sendChat').onclick=()=>{ const text=$('#chatInput').value.trim(); if(!text) return; addChat(text,true); send({type:'chat',text}); $('#chatInput').value=''; };
+$('#chatInput').addEventListener('keydown',e=>{if(e.key==='Enter') $('#sendChat').click();});
+function addChat(text,me){ const box=$('#chatBox'); const d=document.createElement('div'); d.className='msg '+(me?'me':''); d.textContent=(me?'You: ':'Friend: ')+text; box.appendChild(d); box.scrollTop=box.scrollHeight; }
+
+let games = {
+  ttt:{board:Array(9).fill(''),turn:'X',result:null},
+  c4:{grid:Array.from({length:6},()=>Array(7).fill('')),turn:'B',result:null},
+  chess:{fen:'start',clocks:{w:300,b:300},running:false,lastTick:now(),result:null},
+  rps:{p1:null,p2:null,round:1,score:{p1:0,p2:0},result:null},
+  memory:{cards:[],open:[],matched:[],turn:'p1',score:{p1:0,p2:0},result:null},
+  reaction:{phase:'idle',startAt:0,score:{p1:0,p2:0},result:null},
+  checkers:{board:null,turn:'p1',selected:null,result:null}
+};
+function initGame(id){
+  if(id==='ttt') games.ttt={board:Array(9).fill(''),turn:'X',result:null};
+  if(id==='c4') games.c4={grid:Array.from({length:6},()=>Array(7).fill('')),turn:'B',result:null};
+  if(id==='chess') games.chess={fen:'start',clocks:{w:300,b:300},running:false,lastTick:now(),result:null};
+  if(id==='rps') games.rps={p1:null,p2:null,round:1,score:{p1:0,p2:0},result:null};
+  if(id==='memory'){ const emojis=['🍕','🚗','🎮','⭐','🔥','🧊','⚽','🎧']; const cards=shuffle([...emojis,...emojis]); games.memory={cards,open:[],matched:[],turn:'p1',score:{p1:0,p2:0},result:null}; }
+  if(id==='reaction') games.reaction={phase:'idle',startAt:0,score:{p1:0,p2:0},result:null};
+  if(id==='checkers') games.checkers={board:initCheckers(),turn:'p1',selected:null,result:null};
+}
+GAME_LIST.forEach(g=>initGame(g.id));
+function getState(){ return JSON.parse(JSON.stringify(games[currentGame])); }
+function setState(state,rer=true){ games[currentGame]=state; if(rer) renderGame(); else renderGame(); }
+function syncState(){ send({type:'state',game:currentGame,state:getState()}); }
+function mySide(){ return !online ? null : (isHost?'p1':'p2'); }
+function canPlaySide(side){ return !online || side===mySide(); }
+function setGame(id, notify=true){ currentGame=id; if(!games[id]) initGame(id); $$('.tab').forEach(t=>t.classList.toggle('active',t.dataset.id===id)); if(notify) send({type:'selectGame',game:id}); renderGame(); }
+$('#tabs').innerHTML = GAME_LIST.map(g=>`<button class="tab" data-id="${g.id}">${g.name}</button>`).join('');
+$$('.tab').forEach(t=>t.onclick=()=>setGame(t.dataset.id));
+$('#resetGame').onclick=()=>{ initGame(currentGame); renderGame(); syncState(); };
+setGame('ttt',false);
+setInterval(()=>{ if(currentGame==='chess') renderChessClocks(); },500);
+
+function renderGame(){ updateModeLight(); if(currentGame==='ttt') renderTTT(); if(currentGame==='c4') renderC4(); if(currentGame==='chess') renderChess(); if(currentGame==='rps') renderRPS(); if(currentGame==='memory') renderMemory(); if(currentGame==='reaction') renderReaction(); if(currentGame==='checkers') renderCheckers(); }
+function updateModeLight(){ $$('.tab').forEach(t=>t.classList.toggle('active',t.dataset.id===currentGame)); }
+function gameMsg(t){ $('#gameMessage').textContent=t; }
+
+function renderTTT(){
+  const g=games.ttt; const side = g.turn==='X'?'p1':'p2'; gameMsg(g.result?`Game over: ${g.result}`:`Tic Tac Toe — ${g.turn}'s turn ${online? side===mySide()?'(your turn)':'(friend turn)':'(local play)'}`);
+  $('#boardArea').innerHTML = `<div class="ttt">${g.board.map((v,i)=>`<button data-i="${i}" class="${v.toLowerCase()}">${v}</button>`).join('')}</div>`;
+  $$('.ttt button').forEach(b=>b.onclick=()=>{ const i=+b.dataset.i; if(g.result||g.board[i]) return; const side=g.turn==='X'?'p1':'p2'; if(!canPlaySide(side)) return toast('Not your turn.'); g.board[i]=g.turn; const res=tttResult(g.board); if(res){g.result=res; award('ttt',res==='Draw'?'draw':(res===g.turn?side:null));} else g.turn=g.turn==='X'?'O':'X'; renderTTT(); syncState(); });
+}
+function tttResult(b){ const wins=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]; for(const w of wins){ if(b[w[0]]&&b[w[0]]===b[w[1]]&&b[w[1]]===b[w[2]]) return b[w[0]]; } return b.every(Boolean)?'Draw':null; }
+
+function renderC4(){
+  const g=games.c4; const side = g.turn==='B'?'p1':'p2'; gameMsg(g.result?`Game over: ${g.result}`:`Connect Four — ${g.turn==='B'?'Blue':'Gold'} turn ${online? side===mySide()?'(your turn)':'(friend turn)':'(local play)'}`);
+  let html='<div class="c4" id="c4Board">';
+  for(let r=0;r<6;r++) for(let c=0;c<7;c++) html+=`<div class="hole" data-r="${r}" data-c="${c}">${g.grid[r][c]?`<div class="disc ${g.grid[r][c]}"></div>`:''}</div>`;
+  for(let c=0;c<7;c++) html+=`<div class="c4Col" data-c="${c}" style="left:${14+c*72}px"></div>`;
+  html+='</div>'; $('#boardArea').innerHTML=html;
+  $$('.c4Col').forEach(col=>col.onclick=()=>applyC4Move(+col.dataset.c,true));
+}
+function applyC4Move(col, notify){
+  const g=games.c4; if(c4Animating||g.result) return; const side=g.turn==='B'?'p1':'p2'; if(notify && !canPlaySide(side)) return toast('Not your turn.');
+  let row=-1; for(let r=5;r>=0;r--) if(!g.grid[r][col]){row=r;break;} if(row<0) return;
+  c4Animating=true; animateC4(col,row,g.turn,()=>{
+    g.grid[row][col]=g.turn; const res=c4Result(g.grid,g.turn); if(res){ g.result=g.turn==='B'?'Blue wins':'Gold wins'; award('c4',g.turn==='B'?'p1':'p2'); } else if(g.grid.every(rr=>rr.every(Boolean))){g.result='Draw'; award('c4','draw');} else g.turn=g.turn==='B'?'G':'B'; c4Animating=false; renderC4(); if(notify){send({type:'c4move',col}); syncState();}
+  });
+}
+function animateC4(col,row,piece,done){
+  const board=$('#c4Board'); if(!board){done();return;} const d=document.createElement('div'); d.className=`fallingDisc disc ${piece}`; const cell=window.innerWidth<=950? window.innerWidth*.12+5 : 72; const left=(window.innerWidth<=950?8:14)+col*cell+(window.innerWidth<=950?window.innerWidth*.01:5); const y=(window.innerWidth<=950?8:14)+row*cell+(window.innerWidth<=950?window.innerWidth*.01:5); d.style.left=left+'px'; d.style.top='0px'; d.style.transform='translateY(-70px)'; board.appendChild(d); requestAnimationFrame(()=>d.style.transform=`translateY(${y}px)`); setTimeout(()=>{d.remove(); done();},390);
+}
+function c4Result(grid,p){ const dirs=[[1,0],[0,1],[1,1],[1,-1]]; for(let r=0;r<6;r++)for(let c=0;c<7;c++)if(grid[r][c]===p){ for(const [dr,dc] of dirs){ let n=1; for(let k=1;k<4;k++){ const rr=r+dr*k, cc=c+dc*k; if(rr>=0&&rr<6&&cc>=0&&cc<7&&grid[rr][cc]===p)n++; else break;} if(n>=4)return true; }} return false; }
+
+function currentChess(){ const g=games.chess; return g.fen==='start'? new Chess() : new Chess(g.fen); }
+function renderChess(){
+  const g=games.chess; const chess=currentChess(); const turn=chess.turn(); const side=turn==='w'?'p1':'p2'; const label=turn==='w'?'Blue':'Gold';
+  gameMsg(g.result?`Chess over: ${g.result}`:`Chess — ${label} to move ${online?side===mySide()?'(your turn)':'(friend turn)':'(local play)'}`);
+  const orientation = online && !isHost ? 'black' : 'white';
+  $('#boardArea').innerHTML = `<div class="chessWrap"><div class="clocks"><div class="clock" id="goldClock">Gold 05:00</div><button id="toggleClock" class="secondary">${g.running?'Pause':'Start'} clocks</button><div class="clock" id="blueClock">Blue 05:00</div></div><div class="chessBoard" id="chessBoard"></div><div class="small">Drag pieces or click a piece then click a square. Illegal moves, check, and king safety are enforced.</div></div>`;
+  $('#toggleClock').onclick=()=>{ updateChessClock(); g.running=!g.running; g.lastTick=now(); renderChess(); syncState(); };
+  renderChessClocks();
+  const board=$('#chessBoard'); const squares = orientation==='white' ? makeSquaresWhite() : makeSquaresBlack();
+  squares.forEach((sq,idx)=>{ const piece=chess.get(sq); const div=document.createElement('div'); div.className=`sq ${((Math.floor(idx/8)+idx%8)%2)?'dark':'light'} ${selectedChess===sq?'sel':''} ${legalChess.includes(sq)?'legal':''}`; div.dataset.sq=sq; div.innerHTML = piece? `<div class="piece ${piece.color==='w'?'bluePiece':'goldPiece'}" draggable="true" data-sq="${sq}">${pieceSvg(piece.type)}</div>`:''; board.appendChild(div); });
+  $$('.sq').forEach(s=>{ s.ondragover=e=>e.preventDefault(); s.ondrop=e=>{ e.preventDefault(); const from=e.dataTransfer.getData('text/plain'); chessMove(from,s.dataset.sq); }; s.onclick=()=>squareClick(s.dataset.sq); });
+  setupChessDrag();
+}
+
+function setupChessDrag(){
+  $$('.piece').forEach(piece=>{
+    piece.ondragstart=e=>{ e.dataTransfer.setData('text/plain',piece.dataset.sq); };
+    piece.addEventListener('pointerdown', e=>{
+      if(e.pointerType==='mouse' && e.button!==0) return;
+      const from=piece.dataset.sq; const chess=currentChess(); const p=chess.get(from); if(!p) return;
+      const side=p.color==='w'?'p1':'p2';
+      if(!canPlaySide(side) || p.color!==chess.turn()) return;
+      e.preventDefault();
+      const ghost=piece.cloneNode(true); ghost.classList.add('dragGhost'); document.body.appendChild(ghost);
+      const moveGhost=ev=>{ ghost.style.left=ev.clientX+'px'; ghost.style.top=ev.clientY+'px'; };
+      moveGhost(e);
+      const up=ev=>{
+        document.removeEventListener('pointermove', moveGhost);
+        document.removeEventListener('pointerup', up);
+        const el=document.elementFromPoint(ev.clientX, ev.clientY);
+        const sqEl=el?.closest?.('.sq');
+        ghost.remove();
+        if(sqEl && sqEl.dataset.sq) chessMove(from,sqEl.dataset.sq);
+      };
+      document.addEventListener('pointermove', moveGhost);
+      document.addEventListener('pointerup', up);
+    }, {passive:false});
+  });
+}
+function makeSquaresWhite(){ const out=[]; for(let r=8;r>=1;r--) for(const f of 'abcdefgh') out.push(f+r); return out; }
+function makeSquaresBlack(){ const out=[]; for(let r=1;r<=8;r++) for(const f of 'hgfedcba') out.push(f+r); return out; }
+function squareClick(sq){ const chess=currentChess(); const p=chess.get(sq); if(selectedChess){ if(chessMove(selectedChess,sq)) return; selectedChess=null; legalChess=[]; } if(p){ const side=p.color==='w'?'p1':'p2'; if(!canPlaySide(side)) return toast('That is not your piece.'); if(p.color!==chess.turn()) return toast('Not that color\'s turn.'); selectedChess=sq; legalChess=chess.moves({square:sq,verbose:true}).map(m=>m.to); renderChess(); } }
+function chessMove(from,to){ const g=games.chess; const chess=currentChess(); const p=chess.get(from); if(!p) return false; const side=p.color==='w'?'p1':'p2'; if(!canPlaySide(side)) return toast('Not your turn.'), false; updateChessClock(); const move=chess.move({from,to,promotion:'q'}); if(!move){ toast('Illegal chess move.'); selectedChess=null; legalChess=[]; renderChess(); return false; } g.fen=chess.fen(); g.lastTick=now(); selectedChess=null; legalChess=[]; if(chess.in_checkmate()){ g.result=(chess.turn()==='w'?'Gold':'Blue')+' wins by checkmate'; award('chess', chess.turn()==='w'?'p2':'p1'); } else if(chess.in_draw()){ g.result='Draw'; award('chess','draw'); } renderChess(); syncState(); return true; }
+function updateChessClock(){ const g=games.chess; if(!g.running||g.result) return; const chess=currentChess(); const elapsed=(now()-g.lastTick)/1000; const key=chess.turn(); g.clocks[key]=Math.max(0,g.clocks[key]-elapsed); g.lastTick=now(); if(g.clocks[key]<=0){ g.result=(key==='w'?'Gold':'Blue')+' wins on time'; award('chess', key==='w'?'p2':'p1'); } }
+function renderChessClocks(){ const g=games.chess; if(!$('#blueClock')) return; let cw=g.clocks.w, cb=g.clocks.b; if(g.running&&!g.result){ const chess=currentChess(); const e=(now()-g.lastTick)/1000; if(chess.turn()==='w') cw=Math.max(0,cw-e); else cb=Math.max(0,cb-e); } $('#blueClock').textContent='Blue '+fmt(cw); $('#goldClock').textContent='Gold '+fmt(cb); $('#blueClock').classList.toggle('active', currentChess().turn()==='w'&&g.running); $('#goldClock').classList.toggle('active', currentChess().turn()==='b'&&g.running); }
+function fmt(s){ s=Math.ceil(s); return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); }
+function pieceSvg(type){
+  const map={p:'<circle class="body" cx="50" cy="30" r="14"/><path class="body" d="M35 82h30l-4-34H39z"/><rect class="shade" x="28" y="78" width="44" height="10" rx="5"/>',
+  r:'<path class="body" d="M25 22h10v10h10V22h10v10h10V22h10v24H25z"/><path class="body" d="M34 46h32l5 36H29z"/><rect class="shade" x="24" y="78" width="52" height="10" rx="5"/>',
+  n:'<path class="body" d="M68 82H30c4-20 9-36 23-48l-8-12c18 3 30 17 28 35l-13-2 10 10z"/><rect class="shade" x="25" y="78" width="50" height="10" rx="5"/>',
+  b:'<path class="body" d="M50 13c18 18 22 38 4 56h-8C28 51 32 31 50 13z"/><path class="rim" d="M43 43h14l-7 15z"/><rect class="shade" x="26" y="78" width="48" height="10" rx="5"/>',
+  q:'<circle class="body" cx="30" cy="25" r="8"/><circle class="body" cx="50" cy="17" r="8"/><circle class="body" cx="70" cy="25" r="8"/><path class="body" d="M25 34h50l-9 43H34z"/><rect class="shade" x="24" y="78" width="52" height="10" rx="5"/>',
+  k:'<path class="body" d="M36 28l14-14 14 14 12 48H24z"/><circle class="rim" cx="50" cy="35" r="9"/><rect class="shade" x="24" y="78" width="52" height="10" rx="5"/>'};
+  return `<svg viewBox="0 0 100 100">${map[type]}</svg>`;
+}
+
+function renderRPS(){ const g=games.rps; gameMsg(`Rock Paper Scissors — ${online?'choose secretly':'local demo'} | Score ${g.score.p1}-${g.score.p2}`); $('#boardArea').innerHTML=`<div class="miniGrid"><div class="rpsBtns"><button data-r="rock">🪨</button><button data-r="paper">📄</button><button data-r="scissors">✂️</button></div><div class="message">Round ${g.round}: ${g.result||'Pick a move.'}</div></div>`; $$('.rpsBtns button').forEach(b=>b.onclick=()=>{ const side=mySide()||(!g.p1?'p1':'p2'); g[side]=b.dataset.r; if(!online&&g.p1&&g.p2) scoreRPS(); if(online){ syncState(); if(g.p1&&g.p2) scoreRPS(); } renderRPS(); }); }
+function scoreRPS(){ const g=games.rps; const wins={rock:'scissors',paper:'rock',scissors:'paper'}; if(g.p1===g.p2) g.result='Draw'; else if(wins[g.p1]===g.p2){g.score.p1++; g.result='Player 1 wins round';} else {g.score.p2++; g.result='Player 2 wins round';} g.p1=null; g.p2=null; g.round++; }
+function renderMemory(){ const g=games.memory; gameMsg(`Memory Match — ${g.turn==='p1'?'Player 1':'Player 2'} turn | ${g.score.p1}-${g.score.p2}`); $('#boardArea').innerHTML=`<div class="memory">${g.cards.map((v,i)=>`<div class="memCard ${(g.open.includes(i)||g.matched.includes(i))?'open':''}" data-i="${i}">${(g.open.includes(i)||g.matched.includes(i))?v:'?'}</div>`).join('')}</div>`; $$('.memCard').forEach(c=>c.onclick=()=>{ const i=+c.dataset.i; if(g.open.length>=2||g.open.includes(i)||g.matched.includes(i)) return; const side=g.turn; if(!canPlaySide(side)) return toast('Not your turn.'); g.open.push(i); if(g.open.length===2){ const [a,b]=g.open; setTimeout(()=>{ if(g.cards[a]===g.cards[b]){g.matched.push(a,b); g.score[g.turn]++;} else g.turn=g.turn==='p1'?'p2':'p1'; g.open=[]; if(g.matched.length===g.cards.length){g.result='Finished'; award('memory',g.score.p1===g.score.p2?'draw':g.score.p1>g.score.p2?'p1':'p2');} renderMemory(); syncState(); },500);} renderMemory(); syncState(); }); }
+function renderReaction(){ const g=games.reaction; gameMsg(`Reaction Duel — tap when it turns green. Score ${g.score.p1}-${g.score.p2}`); $('#boardArea').innerHTML=`<div class="reactionBox ${g.phase}" id="reactBox"><div><h2>${g.phase==='idle'?'Tap Start':g.phase==='wait'?'Wait...':'TAP NOW!'}</h2><p>${g.result||'First to react scores.'}</p><button id="reactStart" class="secondary">Start round</button></div></div>`; $('#reactStart').onclick=e=>{e.stopPropagation(); g.phase='wait'; g.result='Do not tap yet.'; renderReaction(); syncState(); setTimeout(()=>{ if(currentGame==='reaction'&&games.reaction.phase==='wait'){ games.reaction.phase='go'; games.reaction.startAt=now(); games.reaction.result='GO!'; renderReaction(); syncState(); }}, 1200+Math.random()*2200);}; $('#reactBox').onclick=()=>{ if(g.phase==='idle') return; const side=mySide()||'p1'; if(g.phase==='wait'){ g.score[side==='p1'?'p2':'p1']++; g.result=`${side} tapped too early.`; } else { g.score[side]++; g.result=`${side} reaction: ${now()-g.startAt} ms`; } g.phase='idle'; renderReaction(); syncState(); } }
+function initCheckers(){ const b=Array.from({length:8},()=>Array(8).fill('')); for(let r=0;r<3;r++)for(let c=0;c<8;c++)if((r+c)%2)b[r][c]='p2'; for(let r=5;r<8;r++)for(let c=0;c<8;c++)if((r+c)%2)b[r][c]='p1'; return b; }
+function renderCheckers(){ const g=games.checkers; gameMsg(`Checkers — ${g.turn} turn`); let html='<div class="chessBoard">'; for(let r=0;r<8;r++)for(let c=0;c<8;c++){ const p=g.board[r][c]; html+=`<div class="sq ${((r+c)%2)?'dark':'light'}" data-r="${r}" data-c="${c}">${p?`<div class="disc ${p==='p1'?'B':'G'}" style="position:static"></div>`:''}</div>`; } html+='</div>'; $('#boardArea').innerHTML=html; $$('.sq').forEach(s=>s.onclick=()=>checkersClick(+s.dataset.r,+s.dataset.c)); }
+function checkersClick(r,c){ const g=games.checkers; const p=g.board[r][c]; if(g.selected){ const [sr,sc]=g.selected; const piece=g.board[sr][sc]; const dr=r-sr, dc=c-sc; if(!g.board[r][c] && Math.abs(dc)===1 && ((piece==='p1'&&dr===-1)||(piece==='p2'&&dr===1))){ g.board[r][c]=piece; g.board[sr][sc]=''; g.turn=g.turn==='p1'?'p2':'p1'; g.selected=null; renderCheckers(); syncState(); return; } g.selected=null; renderCheckers(); return; } if(p===g.turn && canPlaySide(p)){ g.selected=[r,c]; toast('Piece selected.'); } }
+
+function award(game,winnerSide){
+  const main={ttt:[20,5],c4:[35,9],chess:[70,18]}; const minor={memory:[15,4],reaction:[12,3],rps:[10,2],checkers:[25,6]}; const rewards=main[game]||minor[game]||[10,2];
+  if(winnerSide==='draw'){ profile.xp+=Math.floor(rewards[0]/2); profile.coins+=Math.floor(rewards[1]/2); if(profile.stats[game]) profile.stats[game].d++; }
+  else if(!online || winnerSide===mySide()){ profile.xp+=rewards[0]; profile.coins+=rewards[1]; profile.streak++; if(profile.stats[game]) profile.stats[game].w++; }
+  else { profile.streak=0; if(profile.stats[game]) profile.stats[game].l++; }
+  profile.gameHistory.unshift({game,winner:winnerSide,at:new Date().toISOString(),online}); profile.gameHistory=profile.gameHistory.slice(0,80); saveProfile();
+}
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function toast(t){ gameMsg(t); }
+function escapeHtml(s){ return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+</script>
 </body>
 </html>
