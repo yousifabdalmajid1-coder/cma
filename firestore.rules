@@ -1,0 +1,239 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function validUsername(value) {
+      return value is string
+        && value.size() >= 3
+        && value.size() <= 16
+        && value.matches('^[a-z0-9_]{3,16}$');
+    }
+
+    function validDate(value) {
+      return value is timestamp
+        || (value is string && value.size() >= 10 && value.size() <= 40);
+    }
+
+    function validCount(value, maximum) {
+      return value is int && value >= 0 && value <= maximum;
+    }
+
+    function validRecord(value) {
+      return value is map
+        && value.keys().hasOnly(['w', 'l', 'd'])
+        && validCount(value.w, 1000000)
+        && validCount(value.l, 1000000)
+        && validCount(value.d, 1000000);
+    }
+
+    function validStats(value) {
+      return value is map
+        && value.keys().hasOnly([
+          'ttt', 'c4', 'chess', 'dots', 'memory', 'reaction', 'crownball', 'checkers'
+        ])
+        && value.keys().hasAll([
+          'ttt', 'c4', 'chess', 'dots', 'memory', 'reaction', 'crownball', 'checkers'
+        ])
+        && validRecord(value.ttt)
+        && validRecord(value.c4)
+        && validRecord(value.chess)
+        && validRecord(value.dots)
+        && validRecord(value.memory)
+        && validRecord(value.reaction)
+        && validRecord(value.crownball)
+        && validRecord(value.checkers);
+    }
+
+    function validFriendship(value) {
+      return value is map
+        && value.keys().hasOnly([
+          'connections', 'calls', 'games', 'lastFriend'
+        ])
+        && value.keys().hasAll([
+          'connections', 'calls', 'games', 'lastFriend'
+        ])
+        && validCount(value.connections, 1000000)
+        && validCount(value.calls, 1000000)
+        && validCount(value.games, 1000000)
+        && value.lastFriend is string
+        && value.lastFriend.size() <= 32;
+    }
+
+    function usernameBelongsTo(uid, username) {
+      return getAfter(
+        /databases/$(database)/documents/usernames/$(username)
+      ).data.uid == uid;
+    }
+
+    function validPrivateProfile(uid, data) {
+      return data.keys().hasOnly([
+          'email', 'username', 'name', 'displayName', 'accent',
+          'atmosphere', 'sound', 'xp', 'coins', 'streak', 'stats',
+          'callHistory', 'gameHistory', 'achievements', 'friendship',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasAll([
+          'email', 'username', 'name', 'displayName', 'accent',
+          'atmosphere', 'sound', 'xp', 'coins', 'streak', 'stats',
+          'callHistory', 'gameHistory', 'achievements', 'friendship',
+          'createdAt', 'updatedAt'
+        ])
+        && data.email is string
+        && data.email.size() >= 3
+        && data.email.size() <= 254
+        && data.email == request.auth.token.email
+        && validUsername(data.username)
+        && usernameBelongsTo(uid, data.username)
+        && data.name is string
+        && data.name.size() >= 1
+        && data.name.size() <= 32
+        && data.displayName is string
+        && data.displayName.size() >= 1
+        && data.displayName.size() <= 32
+        && data.accent is string
+        && data.accent.size() <= 24
+        && data.atmosphere in [
+          'midnight', 'ocean', 'aurora', 'sunset', 'cosmic', 'minimal'
+        ]
+        && data.sound is bool
+        && validCount(data.xp, 1000000000)
+        && validCount(data.coins, 1000000000)
+        && validCount(data.streak, 1000000)
+        && validStats(data.stats)
+        && data.callHistory is list
+        && data.callHistory.size() <= 50
+        && data.gameHistory is list
+        && data.gameHistory.size() <= 80
+        && data.achievements is list
+        && data.achievements.size() <= 100
+        && validFriendship(data.friendship)
+        && validDate(data.createdAt)
+        && validDate(data.updatedAt);
+    }
+
+    function validPublicProfile(uid, data) {
+      return data.keys().hasOnly([
+          'uid', 'username', 'displayName', 'avatar', 'accent',
+          'atmosphere', 'xp', 'level', 'stats', 'updatedAt'
+        ])
+        && data.keys().hasAll([
+          'uid', 'username', 'displayName', 'avatar', 'accent',
+          'atmosphere', 'xp', 'level', 'stats', 'updatedAt'
+        ])
+        && data.uid == uid
+        && validUsername(data.username)
+        && usernameBelongsTo(uid, data.username)
+        && data.displayName is string
+        && data.displayName.size() >= 1
+        && data.displayName.size() <= 32
+        && data.avatar is string
+        && data.avatar.size() >= 1
+        && data.avatar.size() <= 4
+        && data.accent is string
+        && data.accent.size() <= 24
+        && data.atmosphere in [
+          'midnight', 'ocean', 'aurora', 'sunset', 'cosmic', 'minimal'
+        ]
+        && validCount(data.xp, 1000000000)
+        && validCount(data.level, 10000)
+        && data.stats is map
+        && data.stats.keys().hasOnly([
+          'ttt', 'c4', 'chess', 'dots', 'memory', 'reaction', 'crownball', 'checkers'
+        ])
+        && data.stats.keys().hasAll([
+          'ttt', 'c4', 'chess', 'dots', 'memory', 'reaction', 'crownball', 'checkers'
+        ])
+        && validRecord(data.stats.ttt)
+        && validRecord(data.stats.c4)
+        && validRecord(data.stats.chess)
+        && validRecord(data.stats.dots)
+        && validRecord(data.stats.memory)
+        && validRecord(data.stats.reaction)
+        && validRecord(data.stats.crownball)
+        && validRecord(data.stats.checkers)
+        && validDate(data.updatedAt)
+        && getAfter(
+          /databases/$(database)/documents/users/$(uid)
+        ).data.username == data.username
+        && getAfter(
+          /databases/$(database)/documents/users/$(uid)
+        ).data.xp == data.xp;
+    }
+
+    // Private profile and history. Collection listing is always denied.
+    match /users/{uid} {
+      allow get: if isOwner(uid);
+      allow list: if false;
+
+      allow create: if isOwner(uid)
+        && validPrivateProfile(uid, request.resource.data);
+
+      allow update: if isOwner(uid)
+        && validPrivateProfile(uid, request.resource.data)
+        && request.resource.data.username == resource.data.username
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.createdAt == resource.data.createdAt;
+
+      allow delete: if false;
+    }
+
+    // Public username availability lookup. The claim is permanent.
+    match /usernames/{username} {
+      allow get: if true;
+      allow list: if false;
+
+      allow create: if signedIn()
+        && validUsername(username)
+        && request.resource.data.keys().hasOnly([
+          'uid', 'username', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'uid', 'username', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.username == username
+        && validDate(request.resource.data.createdAt)
+        && validDate(request.resource.data.updatedAt);
+
+      allow update: if signedIn()
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          'uid', 'username', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.username == resource.data.username
+        && request.resource.data.createdAt == resource.data.createdAt
+        && validDate(request.resource.data.updatedAt);
+
+      allow delete: if false;
+    }
+
+    // Deliberately minimal public leaderboard projection.
+    match /publicProfiles/{uid} {
+      allow get: if true;
+      allow list: if request.query.limit != null
+        && request.query.limit <= 50;
+
+      allow create: if isOwner(uid)
+        && validPublicProfile(uid, request.resource.data);
+
+      allow update: if isOwner(uid)
+        && validPublicProfile(uid, request.resource.data)
+        && request.resource.data.username == resource.data.username;
+
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
